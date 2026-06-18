@@ -10,7 +10,8 @@ class LinkedInCrawler(BaseCrawler):
     async def _fetch_description(self, client: httpx.AsyncClient, job_url: str) -> str:
         """Fetch job description from LinkedIn public job detail page."""
         try:
-            job_id_match = re.search(r"/view/(\d+)", job_url)
+            # URL format: /jobs/view/job-title-slug-4308021555 (ID at end)
+            job_id_match = re.search(r"(\d{8,})(?:[/?]|$)", job_url)
             if not job_id_match:
                 return ""
             job_id = job_id_match.group(1)
