@@ -67,7 +67,13 @@ async def score_job_async(candidate_profile: dict, job: dict) -> dict:
 
 
 async def batch_score_jobs(candidate_profile: dict, jobs: list[dict]) -> list[dict]:
-    tasks = [score_job_async(candidate_profile, job) for job in jobs]
+    semaphore = asyncio.Semaphore(8)
+
+    async def score_with_limit(job: dict) -> dict:
+        async with semaphore:
+            return await score_job_async(candidate_profile, job)
+
+    tasks = [score_with_limit(job) for job in jobs]
     results = await asyncio.gather(*tasks, return_exceptions=True)
     scored = []
     for r in results:

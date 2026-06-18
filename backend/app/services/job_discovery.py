@@ -129,6 +129,20 @@ def deduplicate_jobs(jobs: list[dict]) -> list[dict]:
     return unique
 
 
+def prefilter_jobs(jobs: list[dict], query: str, limit: int = 60) -> list[dict]:
+    """Keyword-score jobs against query before expensive Claude scoring. Returns top N."""
+    query_terms = set(query.lower().split())
+    stop = {"a", "an", "the", "in", "at", "for", "of", "and", "or", "to", "with"}
+    query_terms -= stop
+
+    def keyword_score(job: dict) -> int:
+        text = (job.get("title", "") + " " + job.get("description", "")[:500]).lower()
+        return sum(1 for t in query_terms if t in text)
+
+    scored = sorted(jobs, key=keyword_score, reverse=True)
+    return scored[:limit]
+
+
 async def discover_jobs(
     query: str,
     locations: list[str] = None,
@@ -166,4 +180,5 @@ async def discover_jobs(
             linkedin_jobs = scrape_linkedin_jobs(query=query, location=location, num=num_per_source)
             all_jobs.extend(linkedin_jobs)
 
-    return deduplicate_jobs(all_jobs)
+    unique = deduplicate_jobs(all_jobs)
+    return prefilter_jobs(unique, query, limit=60)

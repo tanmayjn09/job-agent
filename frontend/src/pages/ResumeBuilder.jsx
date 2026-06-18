@@ -83,9 +83,13 @@ export default function ResumeBuilder() {
                 )}
               </div>
             )}
-            <div className="text-sm text-gray-600 leading-relaxed max-h-96 overflow-y-auto whitespace-pre-wrap">
-              {job?.job?.description || 'No description available'}
-            </div>
+            <div
+              className="text-sm text-gray-600 leading-relaxed max-h-96 overflow-y-auto [&_p]:mb-2 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-1 [&_h3]:font-semibold [&_h3]:mt-2"
+              dangerouslySetInnerHTML={{
+                __html: (job?.job?.description || 'No description available')
+                  .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+              }}
+            />
             {job?.job?.url && (
               <a href={job.job.url} target="_blank" rel="noopener noreferrer"
                 className="text-brand-500 hover:text-brand-600 text-sm mt-3 block">

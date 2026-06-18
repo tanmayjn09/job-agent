@@ -33,7 +33,7 @@ async def search_jobs(filters: JobSearchFilters, db: Session = Depends(get_db)):
         expectations.get("employment_types", ["full-time"])[0] if expectations.get("employment_types") else None
     )
 
-    raw_jobs = discover_jobs(
+    raw_jobs = await discover_jobs(
         query=query,
         locations=locations,
         remote=remote if remote else None,
