@@ -71,15 +71,19 @@ def _parse_json_response(text: str, fallback: dict) -> dict:
     if text.startswith("```"):
         text = re.sub(r"^```[a-z]*\n?", "", text)
         text = re.sub(r"\n?```$", "", text).strip()
+    # Try standard parse first
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        match = re.search(r"\{.*\}", text, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group())
-            except json.JSONDecodeError:
-                pass
+        pass
+    # raw_decode stops at first complete JSON object, ignoring trailing text
+    start = text.find("{")
+    if start != -1:
+        try:
+            obj, _ = json.JSONDecoder().raw_decode(text, start)
+            return obj
+        except json.JSONDecodeError:
+            pass
     return fallback
 
 
