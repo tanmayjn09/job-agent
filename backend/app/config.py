@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from pathlib import Path
 
 
@@ -6,6 +7,13 @@ class Settings(BaseSettings):
     anthropic_api_key: str
     serpapi_key: str = ""
     database_url: str = "sqlite:///./job_agent.db"
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def database_url_nonempty(cls, v):
+        if not v or not str(v).strip():
+            return "sqlite:///./job_agent.db"
+        return v
     upload_dir: str = str(Path(__file__).parent.parent.parent.parent / "uploads")
     secret_key: str = "change-this-in-production"
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
