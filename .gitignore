@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+*.db
+*.db-journal
+.env
+
+# Node
+node_modules/
+dist/
+.DS_Store
+
+# Uploads (candidate data - never commit)
+uploads/
+
+# IDE
+.vscode/
+.idea/
+*.swp

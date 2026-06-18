@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10.5pt;
+    color: #1a1a1a;
+    background: white;
+    padding: 28px 36px;
+    max-width: 800px;
+    margin: 0 auto;
+    line-height: 1.4;
+  }
+  .header { margin-bottom: 14px; }
+  .name {
+    font-size: 20pt;
+    font-weight: bold;
+    color: #1a1a1a;
+    letter-spacing: -0.3px;
+  }
+  .contact {
+    font-size: 9pt;
+    color: #444;
+    margin-top: 4px;
+  }
+  .contact span { margin-right: 14px; }
+  .section { margin-top: 14px; }
+  .section-title {
+    font-size: 11pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #1a1a1a;
+    border-bottom: 1.5px solid #1a1a1a;
+    padding-bottom: 2px;
+    margin-bottom: 8px;
+  }
+  .summary { font-size: 10pt; line-height: 1.5; color: #333; }
+  .exp-item { margin-bottom: 10px; }
+  .exp-header { display: flex; justify-content: space-between; align-items: baseline; }
+  .exp-title { font-weight: bold; font-size: 10.5pt; }
+  .exp-company { font-size: 10pt; color: #333; }
+  .exp-dates { font-size: 9.5pt; color: #555; white-space: nowrap; }
+  .exp-location { font-size: 9.5pt; color: #555; }
+  ul { padding-left: 16px; margin-top: 4px; }
+  ul li {
+    font-size: 10pt;
+    margin-bottom: 2px;
+    color: #333;
+    line-height: 1.4;
+  }
+  .skills-grid { display: flex; flex-wrap: wrap; gap: 4px 0; }
+  .skill-category { margin-bottom: 4px; width: 100%; }
+  .skill-label { font-weight: bold; font-size: 9.5pt; margin-right: 6px; }
+  .skill-values { font-size: 10pt; color: #333; }
+  .edu-item { margin-bottom: 6px; }
+  .edu-degree { font-weight: bold; font-size: 10pt; }
+  .edu-details { font-size: 9.5pt; color: #555; }
+  .cert-list { font-size: 10pt; color: #333; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="name">{{ resume.name }}</div>
+  <div class="contact">
+    {% if resume.email %}<span>{{ resume.email }}</span>{% endif %}
+    {% if resume.phone %}<span>{{ resume.phone }}</span>{% endif %}
+    {% if resume.linkedin_url %}<span>{{ resume.linkedin_url }}</span>{% endif %}
+    {% if resume.github_url %}<span>{{ resume.github_url }}</span>{% endif %}
+    {% if resume.portfolio_url %}<span>{{ resume.portfolio_url }}</span>{% endif %}
+  </div>
+</div>
+
+{% if resume.summary %}
+<div class="section">
+  <div class="section-title">Summary</div>
+  <div class="summary">{{ resume.summary }}</div>
+</div>
+{% endif %}
+
+{% if resume.experience %}
+<div class="section">
+  <div class="section-title">Experience</div>
+  {% for exp in resume.experience %}
+  <div class="exp-item">
+    <div class="exp-header">
+      <div>
+        <span class="exp-title">{{ exp.title }}</span>
+        {% if exp.company %} &mdash; <span class="exp-company">{{ exp.company }}</span>{% endif %}
+        {% if exp.location %} &middot; <span class="exp-location">{{ exp.location }}</span>{% endif %}
+      </div>
+      <div class="exp-dates">
+        {{ exp.start_date }}{% if exp.end_date %} &ndash; {{ exp.end_date }}{% endif %}
+      </div>
+    </div>
+    {% if exp.bullets %}
+    <ul>
+      {% for bullet in exp.bullets %}
+      <li>{{ bullet }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if resume.skills %}
+<div class="section">
+  <div class="section-title">Skills</div>
+  {% if resume.skills.technical %}
+  <div class="skill-category">
+    <span class="skill-label">Technical:</span>
+    <span class="skill-values">{{ resume.skills.technical | join(", ") }}</span>
+  </div>
+  {% endif %}
+  {% if resume.skills.tools %}
+  <div class="skill-category">
+    <span class="skill-label">Tools:</span>
+    <span class="skill-values">{{ resume.skills.tools | join(", ") }}</span>
+  </div>
+  {% endif %}
+  {% if resume.skills.soft %}
+  <div class="skill-category">
+    <span class="skill-label">Competencies:</span>
+    <span class="skill-values">{{ resume.skills.soft | join(", ") }}</span>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if resume.education %}
+<div class="section">
+  <div class="section-title">Education</div>
+  {% for edu in resume.education %}
+  <div class="edu-item">
+    <div class="edu-degree">{{ edu.degree }}{% if edu.field %} in {{ edu.field }}{% endif %}</div>
+    <div class="edu-details">{{ edu.institution }}{% if edu.year %} &middot; {{ edu.year }}{% endif %}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if resume.certifications %}
+<div class="section">
+  <div class="section-title">Certifications</div>
+  <div class="cert-list">{{ resume.certifications | join(" &middot; ") }}</div>
+</div>
+{% endif %}
+
+</body>
+</html>

@@ -1,0 +1,201 @@
+import { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import JobCard from '../components/JobCard'
+import { jobsApi, candidatesApi } from '../utils/api'
+
+const DATE_OPTIONS = [
+  { value: '24h', label: 'Last 24 hours' },
+  { value: 'week', label: 'Last week' },
+  { value: 'month', label: 'Last month' },
+]
+
+export default function JobSearch() {
+  const { candidateId } = useParams()
+  const navigate = useNavigate()
+  const [matches, setMatches] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [candidate, setCandidate] = useState(null)
+
+  const [filters, setFilters] = useState({
+    query: '',
+    locations: [],
+    remote: null,
+    date_posted: 'month',
+    seniority: '',
+    page: 1,
+    per_page: 20,
+  })
+  const [locationInput, setLocationInput] = useState('')
+  const [hasSearched, setHasSearched] = useState(false)
+
+  useEffect(() => {
+    candidatesApi.get(candidateId).then(res => {
+      setCandidate(res.data)
+      try {
+        const exp = JSON.parse(res.data.expectations_json || '{}')
+        const prof = JSON.parse(res.data.profile_json || '{}')
+        setFilters(f => ({
+          ...f,
+          query: exp.target_role || prof.current_title || '',
+          locations: exp.locations || [],
+          remote: exp.remote_preference === 'remote' ? true : null,
+        }))
+      } catch {}
+    })
+  }, [candidateId])
+
+  const search = async () => {
+    setLoading(true)
+    setError('')
+    setHasSearched(true)
+    try {
+      const res = await jobsApi.search({ ...filters, candidate_id: parseInt(candidateId) })
+      setMatches(res.data.matches || [])
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Search failed. Check your API keys and try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const addLocation = () => {
+    if (locationInput.trim() && !filters.locations.includes(locationInput.trim())) {
+      setFilters(f => ({ ...f, locations: [...f.locations, locationInput.trim()] }))
+      setLocationInput('')
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="max-w-5xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold">Find Jobs</h1>
+            <p className="text-gray-400 text-sm mt-0.5">AI-ranked by your fit score</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => navigate(`/profile/${candidateId}`)}
+              className="text-sm border border-gray-200 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50">
+              My Profile
+            </button>
+            <button onClick={() => navigate(`/dashboard/${candidateId}`)}
+              className="text-sm border border-gray-200 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50">
+              Dashboard
+            </button>
+          </div>
+        </div>
+
+        {/* Filter Bar */}
+        <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
+            <div>
+              <label className="text-xs font-medium text-gray-500 block mb-1">Role / Keywords</label>
+              <input value={filters.query} onChange={e => setFilters(f => ({ ...f, query: e.target.value }))}
+                onKeyDown={e => e.key === 'Enter' && search()}
+                placeholder="e.g. Product Manager, Backend Engineer"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-gray-500 block mb-1">Locations</label>
+              <div className="flex gap-1">
+                <input value={locationInput} onChange={e => setLocationInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addLocation()}
+                  placeholder="City, country..."
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                <button onClick={addLocation} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm">+</button>
+              </div>
+              {filters.locations.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {filters.locations.map((loc, i) => (
+                    <span key={i} className="bg-brand-50 text-brand-600 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+                      {loc}
+                      <button onClick={() => setFilters(f => ({ ...f, locations: f.locations.filter((_, j) => j !== i) }))}>×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-gray-500 block mb-1">Date Posted</label>
+              <select value={filters.date_posted} onChange={e => setFilters(f => ({ ...f, date_posted: e.target.value }))}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                {DATE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+              <input type="checkbox" checked={filters.remote === true}
+                onChange={e => setFilters(f => ({ ...f, remote: e.target.checked ? true : null }))}
+                className="rounded border-gray-300 text-brand-500" />
+              Remote only
+            </label>
+            <div className="flex-1" />
+            <button onClick={search} disabled={loading}
+              className="bg-brand-500 hover:bg-brand-600 disabled:opacity-60 text-white font-medium px-8 py-2 rounded-lg transition-colors flex items-center gap-2">
+              {loading ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  Searching & scoring...
+                </>
+              ) : 'Search Jobs'}
+            </button>
+          </div>
+        </div>
+
+        {/* Results */}
+        {error && (
+          <div className="bg-red-50 border border-red-100 text-red-600 rounded-xl p-4 mb-4 text-sm">{error}</div>
+        )}
+
+        {loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white rounded-xl border border-gray-100 p-5 animate-pulse">
+                <div className="h-4 bg-gray-100 rounded w-3/4 mb-2" />
+                <div className="h-3 bg-gray-100 rounded w-1/2 mb-4" />
+                <div className="h-3 bg-gray-100 rounded w-full mb-2" />
+                <div className="h-3 bg-gray-100 rounded w-5/6" />
+                <div className="h-8 bg-gray-100 rounded-lg mt-4" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!loading && hasSearched && matches.length === 0 && (
+          <div className="text-center py-16 text-gray-400">
+            <div className="text-4xl mb-3">🔍</div>
+            <p className="font-medium">No jobs found</p>
+            <p className="text-sm mt-1">Try broader search terms or different locations</p>
+          </div>
+        )}
+
+        {!loading && !hasSearched && (
+          <div className="text-center py-16 text-gray-400">
+            <div className="text-4xl mb-3">💼</div>
+            <p className="font-medium">Ready to search</p>
+            <p className="text-sm mt-1">Set your filters and hit Search to find your best-fit jobs</p>
+          </div>
+        )}
+
+        {!loading && matches.length > 0 && (
+          <div>
+            <p className="text-sm text-gray-500 mb-4">{matches.length} jobs found and ranked by fit score</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {matches.map(match => (
+                <JobCard key={match.id} match={match} candidateId={candidateId} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
