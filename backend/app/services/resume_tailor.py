@@ -1,4 +1,5 @@
 import json
+import re
 import anthropic
 from ..config import settings
 
@@ -65,22 +66,33 @@ Return ONLY valid JSON (no markdown):
 }"""
 
 
+def _parse_json_response(text: str, fallback: dict) -> dict:
+    text = text.strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```[a-z]*\n?", "", text)
+        text = re.sub(r"\n?```$", "", text).strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group())
+            except json.JSONDecodeError:
+                pass
+    return fallback
+
+
 def extract_jd_keywords(job_description: str) -> dict:
+    fallback = {"required_keywords": [], "preferred_keywords": [], "role_keywords": [], "industry_keywords": []}
+    if not job_description.strip():
+        return fallback
     message = client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=1024,
-        messages=[
-            {
-                "role": "user",
-                "content": f"{KEYWORD_EXTRACTION_PROMPT}\n\nJOB DESCRIPTION:\n{job_description[:4000]}"
-            }
-        ]
+        messages=[{"role": "user", "content": f"{KEYWORD_EXTRACTION_PROMPT}\n\nJOB DESCRIPTION:\n{job_description[:4000]}"}]
     )
-    response_text = message.content[0].text.strip()
-    if response_text.startswith("```"):
-        lines = response_text.split("\n")
-        response_text = "\n".join(lines[1:-1])
-    return json.loads(response_text)
+    return _parse_json_response(message.content[0].text, fallback)
 
 
 def tailor_resume(candidate_profile: dict, job: dict, keywords: dict) -> dict:
@@ -104,12 +116,7 @@ def tailor_resume(candidate_profile: dict, job: dict, keywords: dict) -> dict:
         ]
     )
 
-    response_text = message.content[0].text.strip()
-    if response_text.startswith("```"):
-        lines = response_text.split("\n")
-        response_text = "\n".join(lines[1:-1])
-
-    result = json.loads(response_text)
+    result = _parse_json_response(message.content[0].text, {})
     result["name"] = candidate_profile.get("name", "")
     result["email"] = candidate_profile.get("email", "")
     result["phone"] = candidate_profile.get("phone", "")
