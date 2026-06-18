@@ -1,8 +1,10 @@
 import hashlib
 import json
+import asyncio
 from typing import Optional
 import httpx
 from ..config import settings
+from .crawlers.aggregator import crawl_all_sources
 
 
 def _job_hash(title: str, company: str, location: str) -> str:
@@ -127,7 +129,7 @@ def deduplicate_jobs(jobs: list[dict]) -> list[dict]:
     return unique
 
 
-def discover_jobs(
+async def discover_jobs(
     query: str,
     locations: list[str] = None,
     remote: Optional[bool] = None,
@@ -138,6 +140,7 @@ def discover_jobs(
     locations = locations or [""]
     all_jobs = []
 
+    # SerpAPI (Google Jobs) - primary source
     for location in locations[:3]:
         serpapi_jobs = search_jobs_serpapi(
             query=query,
@@ -149,7 +152,17 @@ def discover_jobs(
         )
         all_jobs.extend(serpapi_jobs)
 
-        if not serpapi_jobs:
+    # Multi-source crawlers - RemoteOK, WeWorkRemotely, HN, Wellfound, YC, Greenhouse/Lever career pages
+    crawler_jobs = await crawl_all_sources(
+        query=query,
+        locations=locations,
+        remote=remote,
+    )
+    all_jobs.extend(crawler_jobs)
+
+    # LinkedIn fallback if no SerpAPI key
+    if not settings.serpapi_key:
+        for location in locations[:2]:
             linkedin_jobs = scrape_linkedin_jobs(query=query, location=location, num=num_per_source)
             all_jobs.extend(linkedin_jobs)
 

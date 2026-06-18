@@ -9,6 +9,9 @@ from ...models.job import Job, JobMatch
 from ...schemas.job import JobSearchFilters, JobSearchResponse, JobMatchResponse, JobResponse
 from ...services.job_discovery import discover_jobs
 from ...services.match_scorer import batch_score_jobs
+from ...services.intelligence.post_scorer import score_post_age
+from ...services.intelligence.competition import estimate_competition
+from ...services.intelligence.company_scorer import compute_priority_score
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
@@ -43,6 +46,16 @@ async def search_jobs(filters: JobSearchFilters, db: Session = Depends(get_db)):
 
     saved_matches = []
     for sj in scored_jobs:
+        age_data = score_post_age(sj.get("posted_at", ""))
+        competition_data = estimate_competition(sj.get("posted_at", ""), sj.get("source", ""))
+        priority_data = compute_priority_score(
+            match_score=sj.get("match_score", 0),
+            urgency_score=age_data["urgency_score"],
+            health_score=70,
+            funding_score=50,
+            competition_score=competition_data["score"],
+        )
+
         job = Job(
             title=sj.get("title", ""),
             company=sj.get("company", ""),
@@ -57,6 +70,12 @@ async def search_jobs(filters: JobSearchFilters, db: Session = Depends(get_db)):
         db.add(job)
         db.flush()
 
+        intelligence = {
+            "age": age_data,
+            "competition": competition_data,
+            "priority": priority_data,
+        }
+
         match = JobMatch(
             candidate_id=candidate.id,
             job_id=job.id,
@@ -64,9 +83,13 @@ async def search_jobs(filters: JobSearchFilters, db: Session = Depends(get_db)):
             match_reasoning=sj.get("reasoning", ""),
             skill_matches=json.dumps(sj.get("skill_matches", [])),
             skill_gaps=json.dumps(sj.get("skill_gaps", [])),
+            intelligence_json=json.dumps(intelligence),
+            priority_score=priority_data["priority_score"],
         )
         db.add(match)
         saved_matches.append((job, match))
+
+    saved_matches.sort(key=lambda x: x[1].priority_score or 0, reverse=True)
 
     db.commit()
 

@@ -21,5 +21,5 @@ def get_db():
 
 
 def init_db():
-    from .models import candidate, job, resume  # noqa: F401
+    from .models import candidate, job, resume, alert, outreach  # noqa: F401
     Base.metadata.create_all(bind=engine)

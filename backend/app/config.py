@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     secret_key: str = "change-this-in-production"
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
     frontend_url: str = ""
+    crunchbase_api_key: str = ""
+    hunter_api_key: str = ""
 
     @property
     def all_cors_origins(self) -> list[str]:
