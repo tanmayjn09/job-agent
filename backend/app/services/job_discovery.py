@@ -129,6 +129,34 @@ def deduplicate_jobs(jobs: list[dict]) -> list[dict]:
     return unique
 
 
+SERVICE_SIGNALS = {"agency", "digital media", "consulting", "staffing", "outsourcing", "bpo", "kpo", "recruitment", "manpower", "solutions pvt", "infotech", "infosys", "wipro", "tcs", "hcl", "cognizant", "accenture", "capgemini", "tech mahindra"}
+PRODUCT_SIGNALS = {"saas", "platform", "software", "technologies", "labs", "ai", "cloud", "product", "startup", "inc.", "corp.", "ltd"}
+SERVICE_EXCLUDE = {"agency", "digital media", "consulting", "staffing", "outsourcing", "bpo", "recruitment", "manpower"}
+PRODUCT_EXCLUDE = SERVICE_SIGNALS
+
+
+def filter_by_company_type(jobs: list[dict], company_type: str) -> list[dict]:
+    if not company_type:
+        return jobs
+
+    def company_text(job):
+        return (job.get("company", "") + " " + job.get("description", "")[:300]).lower()
+
+    if company_type == "product":
+        filtered = [j for j in jobs if not any(s in company_text(j) for s in SERVICE_EXCLUDE)]
+        return filtered if filtered else jobs
+
+    if company_type == "service":
+        filtered = [j for j in jobs if any(s in company_text(j) for s in SERVICE_SIGNALS)]
+        return filtered if filtered else jobs
+
+    if company_type == "startup":
+        filtered = [j for j in jobs if any(s in company_text(j) for s in {"startup", "seed", "series a", "early stage", "founded", "yc", "y combinator", "backed"})]
+        return filtered if filtered else jobs
+
+    return jobs
+
+
 def filter_by_locations(jobs: list[dict], locations: list[str]) -> list[dict]:
     """Keep jobs that match requested locations or are remote. Falls back to all if nothing matches."""
     clean = [l.strip() for l in locations if l.strip()]
@@ -219,3 +247,7 @@ async def discover_jobs(
     unique = deduplicate_jobs(all_jobs)
     location_filtered = filter_by_locations(unique, locations)
     return prefilter_jobs(location_filtered, query, locations=locations, limit=60)
+
+
+def apply_company_type_filter(jobs: list[dict], company_type: str) -> list[dict]:
+    return filter_by_company_type(jobs, company_type)

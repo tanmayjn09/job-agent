@@ -7,7 +7,7 @@ from ...database import get_db
 from ...models.candidate import Candidate
 from ...models.job import Job, JobMatch
 from ...schemas.job import JobSearchFilters, JobSearchResponse, JobMatchResponse, JobResponse
-from ...services.job_discovery import discover_jobs
+from ...services.job_discovery import discover_jobs, apply_company_type_filter
 from ...services.match_scorer import batch_score_jobs
 from ...services.intelligence.post_scorer import score_post_age
 from ...services.intelligence.competition import estimate_competition
@@ -47,6 +47,9 @@ async def search_jobs(filters: JobSearchFilters, db: Session = Depends(get_db)):
     )
 
     scored_jobs = await batch_score_jobs(profile, raw_jobs)
+
+    if filters.company_type:
+        scored_jobs = apply_company_type_filter(scored_jobs, filters.company_type)
 
     saved_matches = []
     for sj in scored_jobs:
