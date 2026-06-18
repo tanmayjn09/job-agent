@@ -6,13 +6,19 @@ from .hn_jobs import HackerNewsJobsCrawler
 from .wellfound import WellfoundCrawler
 from .yc_jobs import YCJobsCrawler
 from .career_pages import CareerPagesCrawler
+from .naukri import NaukriCrawler
+from .indeed import IndeedCrawler
+from .remotive import RemotiveCrawler
 
 ALL_CRAWLERS = [
+    NaukriCrawler(),       # India's #1 job portal
+    IndeedCrawler(),       # Global + India (in.indeed.com)
+    RemotiveCrawler(),     # Remote jobs with public API
     RemoteOKCrawler(),
     WeWorkRemotelyCrawler(),
-    HackerNewsJobsCrawler(),
     WellfoundCrawler(),
     YCJobsCrawler(),
+    HackerNewsJobsCrawler(),
     CareerPagesCrawler(),
 ]
 
