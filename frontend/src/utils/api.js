@@ -1,7 +1,11 @@
 import axios from 'axios'
 
+const BASE_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : '/api'
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: BASE_URL,
   timeout: 120000,
 })
 
@@ -22,7 +26,7 @@ export const jobsApi = {
 export const resumesApi = {
   tailor: (candidateId, jobId) => api.post('/resumes/tailor', { candidate_id: candidateId, job_id: jobId }),
   get: (id) => api.get(`/resumes/${id}`),
-  downloadUrl: (id) => `/api/resumes/${id}/download`,
+  downloadUrl: (id) => `${BASE_URL}/resumes/${id}/download`,
 }
 
 export default api

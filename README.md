@@ -29,7 +29,9 @@ cd job-agent
 
 ```bash
 cd backend
-python3 -m venv venv
+# Requires Python 3.12 (3.14 not yet supported by all dependencies)
+# macOS: brew install python@3.12
+python3.12 -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
