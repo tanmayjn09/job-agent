@@ -1,6 +1,21 @@
 import { useNavigate } from 'react-router-dom'
 import MatchScore from './MatchScore'
 
+const SOURCE_LABELS = {
+  google_jobs: { label: 'Google', color: 'bg-blue-50 text-blue-600' },
+  linkedin: { label: 'LinkedIn', color: 'bg-sky-50 text-sky-700' },
+  naukri: { label: 'Naukri', color: 'bg-orange-50 text-orange-600' },
+  indeed: { label: 'Indeed', color: 'bg-indigo-50 text-indigo-600' },
+  remotive: { label: 'Remotive', color: 'bg-purple-50 text-purple-600' },
+  remoteok: { label: 'RemoteOK', color: 'bg-green-50 text-green-700' },
+  weworkremotely: { label: 'WWR', color: 'bg-teal-50 text-teal-700' },
+  wellfound: { label: 'Wellfound', color: 'bg-pink-50 text-pink-600' },
+  yc_jobs: { label: 'YC', color: 'bg-amber-50 text-amber-700' },
+  hn_jobs: { label: 'HN', color: 'bg-orange-50 text-orange-700' },
+  greenhouse: { label: 'Greenhouse', color: 'bg-emerald-50 text-emerald-700' },
+  lever: { label: 'Lever', color: 'bg-violet-50 text-violet-700' },
+}
+
 export default function JobCard({ match, candidateId }) {
   const navigate = useNavigate()
   const { job, match_score, match_reasoning, skill_matches, skill_gaps } = match
@@ -12,14 +27,19 @@ export default function JobCard({ match, candidateId }) {
     try { return JSON.parse(skill_gaps || '[]') } catch { return [] }
   })()
 
+  const sourceInfo = SOURCE_LABELS[job.source] || { label: job.source || 'Job Board', color: 'bg-gray-100 text-gray-500' }
+
   return (
     <div className="bg-white border border-gray-100 rounded-xl p-5 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${sourceInfo.color}`}>{sourceInfo.label}</span>
+            {job.remote && <span className="bg-blue-50 text-blue-600 text-xs px-2 py-0.5 rounded-full">Remote</span>}
+          </div>
           <h3 className="font-semibold text-gray-900 truncate">{job.title}</h3>
           <p className="text-gray-500 text-sm mt-0.5">
             {job.company}{job.location ? ` · ${job.location}` : ''}
-            {job.remote && <span className="ml-2 bg-blue-50 text-blue-600 text-xs px-2 py-0.5 rounded-full">Remote</span>}
           </p>
           {job.employment_type && (
             <span className="text-xs text-gray-400 mt-1 block">{job.employment_type}</span>

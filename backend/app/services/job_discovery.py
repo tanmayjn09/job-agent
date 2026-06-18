@@ -182,7 +182,7 @@ def filter_by_locations(jobs: list[dict], locations: list[str]) -> list[dict]:
     return matched + remote_only if (matched or remote_only) else jobs
 
 
-def prefilter_jobs(jobs: list[dict], query: str, locations: list[str] = None, limit: int = 60) -> list[dict]:
+def prefilter_jobs(jobs: list[dict], query: str, locations: list[str] = None, limit: int = 100) -> list[dict]:
     """Keyword-score jobs against query and location. Returns top N."""
     query_terms = set(query.lower().split())
     stop = {"a", "an", "the", "in", "at", "for", "of", "and", "or", "to", "with"}
