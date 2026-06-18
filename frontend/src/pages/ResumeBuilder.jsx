@@ -84,24 +84,13 @@ export default function ResumeBuilder() {
                 )}
               </div>
             )}
-            {job?.job?.description ? (
-              <div
-                className="text-sm text-gray-600 leading-relaxed max-h-96 overflow-y-auto [&_p]:mb-2 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-1 [&_h3]:font-semibold [&_h3]:mt-2"
-                dangerouslySetInnerHTML={{
-                  __html: job.job.description.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-                }}
-              />
-            ) : (
-              <div>
-                <p className="text-sm text-gray-400 mb-2">Description not available from this source. Paste it below for a better-tailored resume:</p>
-                <textarea
-                  value={pastedDescription}
-                  onChange={e => setPastedDescription(e.target.value)}
-                  placeholder="Paste the job description here..."
-                  className="w-full h-48 text-sm border border-gray-200 rounded-lg p-3 text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-brand-300"
-                />
-              </div>
-            )}
+            <div
+              className="text-sm text-gray-600 leading-relaxed max-h-96 overflow-y-auto [&_p]:mb-2 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-1 [&_h3]:font-semibold [&_h3]:mt-2"
+              dangerouslySetInnerHTML={{
+                __html: (job?.job?.description || '<span style="color:#9ca3af">Description will be fetched automatically when you generate the resume.</span>')
+                  .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+              }}
+            />
             {job?.job?.url && (
               <a href={job.job.url} target="_blank" rel="noopener noreferrer"
                 className="text-brand-500 hover:text-brand-600 text-sm mt-3 block">

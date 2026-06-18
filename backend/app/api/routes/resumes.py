@@ -1,9 +1,12 @@
 import json
 import os
+import httpx
+import re
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+from bs4 import BeautifulSoup
 
 from ...database import get_db
 from ...models.candidate import Candidate
@@ -13,6 +16,52 @@ from ...schemas.resume import TailorResumeRequest, TailoredResumeResponse
 from ...services.resume_tailor import extract_jd_keywords, tailor_resume
 from ...services.pdf_generator import generate_pdf, get_resume_filename
 from ...config import settings
+
+
+def _fetch_description_serpapi(title: str, company: str) -> str:
+    """Use SerpAPI Google Jobs to find a job description by title + company."""
+    if not settings.serpapi_key:
+        return ""
+    try:
+        r = httpx.get(
+            "https://serpapi.com/search",
+            params={"engine": "google_jobs", "q": f"{title} {company}", "api_key": settings.serpapi_key, "num": 3},
+            timeout=15,
+        )
+        jobs = r.json().get("jobs_results", [])
+        for j in jobs:
+            if company.lower() in j.get("company_name", "").lower() and j.get("description"):
+                return j["description"]
+        if jobs and jobs[0].get("description"):
+            return jobs[0]["description"]
+    except Exception:
+        pass
+    return ""
+
+
+def _fetch_linkedin_description(job_url: str) -> str:
+    """Fetch LinkedIn job description via the public guest job posting API."""
+    try:
+        m = re.search(r"(\d{8,})(?:[/?]|$)", job_url)
+        if not m:
+            return ""
+        job_id = m.group(1)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+        r = httpx.get(
+            f"https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{job_id}",
+            headers=headers, timeout=15, follow_redirects=True,
+        )
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, "html.parser")
+            desc_el = soup.find(class_=lambda c: c and ("description__text" in c or "show-more-less-html" in c))
+            if desc_el:
+                return desc_el.get_text(separator="\n", strip=True)[:4000]
+    except Exception:
+        pass
+    return ""
 
 router = APIRouter(prefix="/api/resumes", tags=["resumes"])
 
@@ -45,6 +94,12 @@ def tailor_resume_endpoint(request: TailorResumeRequest, db: Session = Depends(g
 
     try:
         description = request.extra_description or job.description or ""
+        # Auto-fetch description if missing
+        if not description.strip():
+            if job.source == "linkedin" and job.url:
+                description = _fetch_linkedin_description(job.url)
+            if not description.strip() and job.title and job.company:
+                description = _fetch_description_serpapi(job.title, job.company)
         job_dict = {
             "title": job.title,
             "company": job.company,
