@@ -9,8 +9,10 @@ from .career_pages import CareerPagesCrawler
 from .naukri import NaukriCrawler
 from .indeed import IndeedCrawler
 from .remotive import RemotiveCrawler
+from .linkedin import LinkedInCrawler
 
 ALL_CRAWLERS = [
+    LinkedInCrawler(),     # LinkedIn public guest API
     NaukriCrawler(),       # India's #1 job portal
     IndeedCrawler(),       # Global + India (in.indeed.com)
     RemotiveCrawler(),     # Remote jobs with public API
