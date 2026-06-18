@@ -129,15 +129,51 @@ def deduplicate_jobs(jobs: list[dict]) -> list[dict]:
     return unique
 
 
-def prefilter_jobs(jobs: list[dict], query: str, limit: int = 60) -> list[dict]:
-    """Keyword-score jobs against query before expensive Claude scoring. Returns top N."""
+def filter_by_locations(jobs: list[dict], locations: list[str]) -> list[dict]:
+    """Keep jobs that match requested locations or are remote. Falls back to all if nothing matches."""
+    clean = [l.strip() for l in locations if l.strip()]
+    if not clean:
+        return jobs
+
+    location_terms = set()
+    for loc in clean:
+        for word in loc.lower().split():
+            if len(word) > 2:
+                location_terms.add(word)
+
+    matched, remote_only = [], []
+    for job in jobs:
+        job_loc = job.get("location", "").lower()
+        is_remote = job.get("remote", False) or "remote" in job_loc or "anywhere" in job_loc
+        loc_match = any(term in job_loc for term in location_terms)
+        if loc_match:
+            matched.append(job)
+        elif is_remote:
+            remote_only.append(job)
+
+    return matched + remote_only if (matched or remote_only) else jobs
+
+
+def prefilter_jobs(jobs: list[dict], query: str, locations: list[str] = None, limit: int = 60) -> list[dict]:
+    """Keyword-score jobs against query and location. Returns top N."""
     query_terms = set(query.lower().split())
     stop = {"a", "an", "the", "in", "at", "for", "of", "and", "or", "to", "with"}
     query_terms -= stop
 
+    location_terms = set()
+    for loc in (locations or []):
+        for word in loc.lower().split():
+            if len(word) > 2:
+                location_terms.add(word)
+
     def keyword_score(job: dict) -> int:
         text = (job.get("title", "") + " " + job.get("description", "")[:500]).lower()
-        return sum(1 for t in query_terms if t in text)
+        score = sum(1 for t in query_terms if t in text)
+        if location_terms:
+            job_loc = job.get("location", "").lower()
+            if any(term in job_loc for term in location_terms):
+                score += 5
+        return score
 
     scored = sorted(jobs, key=keyword_score, reverse=True)
     return scored[:limit]
@@ -181,4 +217,5 @@ async def discover_jobs(
             all_jobs.extend(linkedin_jobs)
 
     unique = deduplicate_jobs(all_jobs)
-    return prefilter_jobs(unique, query, limit=60)
+    location_filtered = filter_by_locations(unique, locations)
+    return prefilter_jobs(location_filtered, query, locations=locations, limit=60)

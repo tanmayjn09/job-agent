@@ -9,6 +9,12 @@ const DATE_OPTIONS = [
   { value: 'month', label: 'Last month' },
 ]
 
+const CITY_SUGGESTIONS = [
+  'Bengaluru', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune', 'Chennai', 'Kolkata', 'Ahmedabad', 'Noida', 'Gurugram',
+  'Singapore', 'London', 'New York', 'San Francisco', 'Austin', 'Seattle', 'Toronto', 'Berlin', 'Amsterdam', 'Dubai',
+  'Remote', 'India', 'United States', 'United Kingdom',
+]
+
 export default function JobSearch() {
   const { candidateId } = useParams()
   const navigate = useNavigate()
@@ -27,6 +33,7 @@ export default function JobSearch() {
     per_page: 20,
   })
   const [locationInput, setLocationInput] = useState('')
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
 
   useEffect(() => {
@@ -97,15 +104,33 @@ export default function JobSearch() {
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
             </div>
 
-            <div>
+            <div className="relative">
               <label className="text-xs font-medium text-gray-500 block mb-1">Locations</label>
               <div className="flex gap-1">
-                <input value={locationInput} onChange={e => setLocationInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && addLocation()}
+                <input value={locationInput}
+                  onChange={e => { setLocationInput(e.target.value); setShowCitySuggestions(true) }}
+                  onKeyDown={e => { if (e.key === 'Enter') { addLocation(); setShowCitySuggestions(false) } }}
+                  onFocus={() => setShowCitySuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowCitySuggestions(false), 150)}
                   placeholder="City, country..."
                   className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-                <button onClick={addLocation} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm">+</button>
+                <button onClick={() => { addLocation(); setShowCitySuggestions(false) }} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm">+</button>
               </div>
+              {showCitySuggestions && (
+                <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                  {CITY_SUGGESTIONS
+                    .filter(c => c.toLowerCase().includes(locationInput.toLowerCase()) && !filters.locations.includes(c))
+                    .map(city => (
+                      <button key={city} onMouseDown={() => {
+                        setFilters(f => ({ ...f, locations: [...f.locations, city] }))
+                        setLocationInput('')
+                        setShowCitySuggestions(false)
+                      }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">
+                        {city}
+                      </button>
+                    ))}
+                </div>
+              )}
               {filters.locations.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1">
                   {filters.locations.map((loc, i) => (
