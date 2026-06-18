@@ -1,6 +1,22 @@
 import { useNavigate } from 'react-router-dom'
 import MatchScore from './MatchScore'
 
+function formatPostedAt(raw) {
+  if (!raw) return null
+  // Already a relative string like "3 days ago" or "1 week ago"
+  if (/ago|hour|day|week|month|year/i.test(raw)) return raw
+  // ISO date like "2024-05-10"
+  const d = new Date(raw)
+  if (isNaN(d)) return raw
+  const days = Math.floor((Date.now() - d) / 86400000)
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  if (days < 7) return `${days}d ago`
+  if (days < 30) return `${Math.floor(days / 7)}w ago`
+  if (days < 365) return `${Math.floor(days / 30)}mo ago`
+  return `${Math.floor(days / 365)}y ago`
+}
+
 const SOURCE_LABELS = {
   google_jobs: { label: 'Google', color: 'bg-blue-50 text-blue-600' },
   linkedin: { label: 'LinkedIn', color: 'bg-sky-50 text-sky-700' },
@@ -28,14 +44,16 @@ export default function JobCard({ match, candidateId }) {
   })()
 
   const sourceInfo = SOURCE_LABELS[job.source] || { label: job.source || 'Job Board', color: 'bg-gray-100 text-gray-500' }
+  const postedLabel = formatPostedAt(job.posted_at)
 
   return (
     <div className="bg-white border border-gray-100 rounded-xl p-5 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
+          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${sourceInfo.color}`}>{sourceInfo.label}</span>
             {job.remote && <span className="bg-blue-50 text-blue-600 text-xs px-2 py-0.5 rounded-full">Remote</span>}
+            {postedLabel && <span className="text-xs text-gray-400">{postedLabel}</span>}
           </div>
           <h3 className="font-semibold text-gray-900 truncate">{job.title}</h3>
           <p className="text-gray-500 text-sm mt-0.5">
