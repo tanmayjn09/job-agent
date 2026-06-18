@@ -6,6 +6,7 @@ from datetime import datetime
 class TailorResumeRequest(BaseModel):
     candidate_id: int
     job_id: int
+    extra_description: Optional[str] = None
 
 
 class TailoredResumeResponse(BaseModel):

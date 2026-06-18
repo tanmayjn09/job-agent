@@ -24,7 +24,7 @@ export const jobsApi = {
 }
 
 export const resumesApi = {
-  tailor: (candidateId, jobId) => api.post('/resumes/tailor', { candidate_id: candidateId, job_id: jobId }),
+  tailor: (candidateId, jobId, extraDescription) => api.post('/resumes/tailor', { candidate_id: candidateId, job_id: jobId, extra_description: extraDescription || null }),
   get: (id) => api.get(`/resumes/${id}`),
   downloadUrl: (id) => `${BASE_URL}/resumes/${id}/download`,
 }

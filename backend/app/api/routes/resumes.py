@@ -44,14 +44,15 @@ def tailor_resume_endpoint(request: TailorResumeRequest, db: Session = Depends(g
     db.flush()
 
     try:
+        description = request.extra_description or job.description or ""
         job_dict = {
             "title": job.title,
             "company": job.company,
-            "description": job.description or "",
+            "description": description,
             "location": job.location,
         }
 
-        keywords = extract_jd_keywords(job.description or "")
+        keywords = extract_jd_keywords(description)
         tailored = tailor_resume(profile, job_dict, keywords)
 
         resume_record.content_json = json.dumps(tailored)
