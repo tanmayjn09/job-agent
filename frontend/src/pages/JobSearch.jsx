@@ -4,9 +4,17 @@ import JobCard from '../components/JobCard'
 import { jobsApi, candidatesApi } from '../utils/api'
 
 const DATE_OPTIONS = [
+  { value: 'all', label: 'All time' },
   { value: '24h', label: 'Last 24 hours' },
   { value: 'week', label: 'Last week' },
   { value: 'month', label: 'Last month' },
+]
+
+const COMPANY_TYPE_OPTIONS = [
+  { value: '', label: 'Any' },
+  { value: 'product', label: 'Product' },
+  { value: 'service', label: 'Service/IT' },
+  { value: 'startup', label: 'Startup' },
 ]
 
 const CITY_SUGGESTIONS = [
@@ -14,6 +22,18 @@ const CITY_SUGGESTIONS = [
   'Singapore', 'London', 'New York', 'San Francisco', 'Austin', 'Seattle', 'Toronto', 'Berlin', 'Amsterdam', 'Dubai',
   'Remote', 'India', 'United States', 'United Kingdom',
 ]
+
+function parsePostedAt(str) {
+  if (!str) return 0
+  const m = str.match(/(\d+)\s*(hour|day|week|month)/i)
+  if (!m) return 0
+  const n = parseInt(m[1])
+  const u = m[2].toLowerCase()
+  if (u.startsWith('hour')) return Date.now() - n * 3600000
+  if (u.startsWith('day')) return Date.now() - n * 86400000
+  if (u.startsWith('week')) return Date.now() - n * 604800000
+  return Date.now() - n * 2592000000
+}
 
 export default function JobSearch() {
   const { candidateId } = useParams()
@@ -28,6 +48,7 @@ export default function JobSearch() {
     locations: [],
     remote: null,
     date_posted: 'month',
+    company_type: '',
     seniority: '',
     page: 1,
     per_page: 20,
@@ -35,6 +56,7 @@ export default function JobSearch() {
   const [locationInput, setLocationInput] = useState('')
   const [showCitySuggestions, setShowCitySuggestions] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
+  const [sortBy, setSortBy] = useState('match')
 
   useEffect(() => {
     candidatesApi.get(candidateId).then(res => {
@@ -152,13 +174,29 @@ export default function JobSearch() {
             </div>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            <div>
+              <label className="text-xs font-medium text-gray-500 block mb-1">Company Type</label>
+              <div className="flex gap-1 flex-wrap">
+                {COMPANY_TYPE_OPTIONS.map(opt => (
+                  <button key={opt.value} onClick={() => setFilters(f => ({ ...f, company_type: opt.value }))}
+                    className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${filters.company_type === opt.value ? 'bg-brand-500 text-white border-brand-500' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-end">
+              <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                <input type="checkbox" checked={filters.remote === true}
+                  onChange={e => setFilters(f => ({ ...f, remote: e.target.checked ? true : null }))}
+                  className="rounded border-gray-300 text-brand-500" />
+                Remote only
+              </label>
+            </div>
+          </div>
+
           <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-              <input type="checkbox" checked={filters.remote === true}
-                onChange={e => setFilters(f => ({ ...f, remote: e.target.checked ? true : null }))}
-                className="rounded border-gray-300 text-brand-500" />
-              Remote only
-            </label>
             <div className="flex-1" />
             <button onClick={search} disabled={loading}
               className="bg-brand-500 hover:bg-brand-600 disabled:opacity-60 text-white font-medium px-8 py-2 rounded-lg transition-colors flex items-center gap-2">
@@ -212,9 +250,24 @@ export default function JobSearch() {
 
         {!loading && matches.length > 0 && (
           <div>
-            <p className="text-sm text-gray-500 mb-4">{matches.length} jobs found and ranked by fit score</p>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm text-gray-500">{matches.length} jobs found</p>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400">Sort by:</span>
+                <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+                  className="text-sm border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                  <option value="match">Best match</option>
+                  <option value="recent">Most recent</option>
+                  <option value="company">Company A–Z</option>
+                </select>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {matches.map(match => (
+              {[...matches].sort((a, b) => {
+                if (sortBy === 'recent') return parsePostedAt(b.job?.posted_at) - parsePostedAt(a.job?.posted_at)
+                if (sortBy === 'company') return (a.job?.company || '').localeCompare(b.job?.company || '')
+                return b.match_score - a.match_score
+              }).map(match => (
                 <JobCard key={match.id} match={match} candidateId={candidateId} />
               ))}
             </div>

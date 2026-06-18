@@ -28,7 +28,11 @@ async def search_jobs(filters: JobSearchFilters, db: Session = Depends(get_db)):
     query = filters.query or expectations.get("target_role") or profile.get("current_title", "Software Engineer")
     locations = filters.locations or expectations.get("locations") or []
     remote = filters.remote if filters.remote is not None else (expectations.get("remote_preference") == "remote")
-    date_posted = filters.date_posted or "month"
+    date_posted = filters.date_posted if filters.date_posted and filters.date_posted != "all" else None
+
+    company_type_map = {"product": "product based company", "service": "IT services company", "startup": "startup"}
+    if filters.company_type and filters.company_type in company_type_map:
+        query = f"{query} {company_type_map[filters.company_type]}"
     employment_type = filters.employment_type or (
         expectations.get("employment_types", ["full-time"])[0] if expectations.get("employment_types") else None
     )
@@ -37,7 +41,7 @@ async def search_jobs(filters: JobSearchFilters, db: Session = Depends(get_db)):
         query=query,
         locations=locations,
         remote=remote if remote else None,
-        date_posted=date_posted,
+        date_posted=date_posted or "",
         employment_type=employment_type,
         num_per_source=filters.per_page,
     )

@@ -9,6 +9,7 @@ class JobSearchFilters(BaseModel):
     locations: Optional[List[str]] = []
     remote: Optional[bool] = None
     date_posted: Optional[str] = "month"
+    company_type: Optional[str] = None
     seniority: Optional[str] = None
     industries: Optional[List[str]] = []
     employment_type: Optional[str] = None

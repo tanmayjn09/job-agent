@@ -6,6 +6,12 @@ import { candidatesApi } from '../utils/api'
 
 const STEPS = ['Upload Resume', 'Add Context', 'Set Expectations']
 
+const CITY_SUGGESTIONS = [
+  'Bengaluru', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune', 'Chennai', 'Kolkata', 'Ahmedabad', 'Noida', 'Gurugram',
+  'Singapore', 'London', 'New York', 'San Francisco', 'Austin', 'Seattle', 'Toronto', 'Berlin', 'Amsterdam', 'Dubai',
+  'Remote', 'India', 'United States', 'United Kingdom',
+]
+
 const SENIORITY_OPTIONS = ['Internship', 'Entry Level', 'Mid Level', 'Senior', 'Lead', 'Manager', 'Director', 'VP', 'C-Level']
 const REMOTE_OPTIONS = [
   { value: 'any', label: 'Any' },
@@ -39,6 +45,7 @@ export default function Onboarding() {
     employment_types: ['full-time'],
   })
   const [locationInput, setLocationInput] = useState('')
+  const [showLocationDrop, setShowLocationDrop] = useState(false)
 
   const addLocation = () => {
     if (locationInput.trim() && !expectations.locations.includes(locationInput.trim())) {
@@ -189,15 +196,29 @@ export default function Onboarding() {
                   </div>
                 </div>
 
-                <div>
+                <div className="relative">
                   <label className="text-sm font-medium text-gray-700 block mb-1">Locations</label>
                   <div className="flex gap-2">
-                    <input value={locationInput} onChange={e => setLocationInput(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && addLocation()}
+                    <input value={locationInput}
+                      onChange={e => { setLocationInput(e.target.value); setShowLocationDrop(true) }}
+                      onFocus={() => setShowLocationDrop(true)}
+                      onBlur={() => setTimeout(() => setShowLocationDrop(false), 150)}
+                      onKeyDown={e => { if (e.key === 'Enter') { addLocation(); setShowLocationDrop(false) } }}
                       placeholder="Type a city or country and press Enter"
                       className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-                    <button onClick={addLocation} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg">Add</button>
+                    <button onClick={() => { addLocation(); setShowLocationDrop(false) }} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg">Add</button>
                   </div>
+                  {showLocationDrop && (
+                    <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-44 overflow-y-auto">
+                      {CITY_SUGGESTIONS.filter(c => c.toLowerCase().includes(locationInput.toLowerCase()) && !expectations.locations.includes(c)).map(city => (
+                        <button key={city} onMouseDown={() => {
+                          setExpectations(e => ({ ...e, locations: [...e.locations, city] }))
+                          setLocationInput('')
+                          setShowLocationDrop(false)
+                        }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">{city}</button>
+                      ))}
+                    </div>
+                  )}
                   {expectations.locations.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {expectations.locations.map((loc, i) => (
