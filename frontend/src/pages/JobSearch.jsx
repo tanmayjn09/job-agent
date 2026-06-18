@@ -38,6 +38,8 @@ function parsePostedAt(str) {
 export default function JobSearch() {
   const { candidateId } = useParams()
   const navigate = useNavigate()
+  const cacheKey = `job_search_${candidateId}`
+
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -59,6 +61,19 @@ export default function JobSearch() {
   const [sortBy, setSortBy] = useState('match')
 
   useEffect(() => {
+    // Restore cached search results if coming back from resume builder
+    const cached = sessionStorage.getItem(cacheKey)
+    if (cached) {
+      try {
+        const { savedFilters, savedMatches, savedSort } = JSON.parse(cached)
+        setFilters(savedFilters)
+        setMatches(savedMatches)
+        setSortBy(savedSort || 'match')
+        setHasSearched(true)
+        return
+      } catch {}
+    }
+
     candidatesApi.get(candidateId).then(res => {
       setCandidate(res.data)
       try {
@@ -78,9 +93,12 @@ export default function JobSearch() {
     setLoading(true)
     setError('')
     setHasSearched(true)
+    sessionStorage.removeItem(cacheKey)
     try {
       const res = await jobsApi.search({ ...filters, candidate_id: parseInt(candidateId) })
-      setMatches(res.data.matches || [])
+      const results = res.data.matches || []
+      setMatches(results)
+      sessionStorage.setItem(cacheKey, JSON.stringify({ savedFilters: filters, savedMatches: results, savedSort: sortBy }))
     } catch (err) {
       setError(err.response?.data?.detail || 'Search failed. Check your API keys and try again.')
     } finally {
