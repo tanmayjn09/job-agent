@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import MatchScore from './MatchScore'
+import { getCandidateId } from '../utils/candidate'
 
 function formatPostedAt(raw) {
   if (!raw) return null
@@ -32,7 +33,8 @@ const SOURCE_LABELS = {
   lever: { label: 'Lever', color: 'bg-violet-50 text-violet-700' },
 }
 
-export default function JobCard({ match, candidateId }) {
+export default function JobCard({ match }) {
+  const candidateId = getCandidateId()
   const navigate = useNavigate()
   const { job, match_score, match_reasoning, skill_matches, skill_gaps } = match
 
@@ -91,7 +93,7 @@ export default function JobCard({ match, candidateId }) {
 
       <div className="flex gap-2 mt-4">
         <button
-          onClick={() => navigate(`/resume/${candidateId}/${job.id}`)}
+          onClick={() => navigate(`/resume/${job.id}`)}
           className="flex-1 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium py-2 rounded-lg transition-colors"
         >
           Tailor Resume

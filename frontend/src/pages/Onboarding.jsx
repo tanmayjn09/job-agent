@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import ProgressSteps from '../components/ProgressSteps'
 import FileUpload from '../components/FileUpload'
 import { candidatesApi } from '../utils/api'
+import { setCandidateId } from '../utils/candidate'
 
 const STEPS = ['Upload Resume', 'Add Context', 'Set Expectations']
 
@@ -80,7 +81,8 @@ export default function Onboarding() {
       extraFiles.forEach(f => formData.append('extra_files', f))
 
       const data = await candidatesApi.onboard(formData)
-      navigate(`/profile/${data.data.id}`)
+      setCandidateId(data.data.id)
+      navigate('/profile')
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to process resume. Please try again.')
     } finally {

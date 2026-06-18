@@ -10,10 +10,10 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Onboarding />} />
-        <Route path="/profile/:candidateId" element={<Profile />} />
-        <Route path="/jobs/:candidateId" element={<JobSearch />} />
-        <Route path="/resume/:candidateId/:jobId" element={<ResumeBuilder />} />
-        <Route path="/dashboard/:candidateId" element={<Dashboard />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/jobs" element={<JobSearch />} />
+        <Route path="/resume/:jobId" element={<ResumeBuilder />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

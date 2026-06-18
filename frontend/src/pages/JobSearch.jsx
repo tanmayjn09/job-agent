@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import JobCard from '../components/JobCard'
 import { jobsApi, candidatesApi } from '../utils/api'
+import { getCandidateId } from '../utils/candidate'
 
 const DATE_OPTIONS = [
   { value: 'all', label: 'All time' },
@@ -36,7 +37,7 @@ function parsePostedAt(str) {
 }
 
 export default function JobSearch() {
-  const { candidateId } = useParams()
+  const candidateId = getCandidateId()
   const navigate = useNavigate()
   const cacheKey = `job_search_${candidateId}`
 
@@ -122,11 +123,11 @@ export default function JobSearch() {
             <p className="text-gray-400 text-sm mt-0.5">AI-ranked by your fit score</p>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => navigate(`/profile/${candidateId}`)}
+            <button onClick={() => navigate("/profile")}
               className="text-sm border border-gray-200 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50">
               My Profile
             </button>
-            <button onClick={() => navigate(`/dashboard/${candidateId}`)}
+            <button onClick={() => navigate("/dashboard")}
               className="text-sm border border-gray-200 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50">
               Dashboard
             </button>
@@ -286,7 +287,7 @@ export default function JobSearch() {
                 if (sortBy === 'company') return (a.job?.company || '').localeCompare(b.job?.company || '')
                 return b.match_score - a.match_score
               }).map(match => (
-                <JobCard key={match.id} match={match} candidateId={candidateId} />
+                <JobCard key={match.id} match={match} />
               ))}
             </div>
           </div>

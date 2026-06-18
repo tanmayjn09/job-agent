@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { candidatesApi, resumesApi } from '../utils/api'
+import { getCandidateId } from '../utils/candidate'
 
 function StatCard({ label, value, sub }) {
   return (
@@ -13,7 +14,7 @@ function StatCard({ label, value, sub }) {
 }
 
 export default function Dashboard() {
-  const { candidateId } = useParams()
+  const candidateId = getCandidateId()
   const navigate = useNavigate()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -47,7 +48,7 @@ export default function Dashboard() {
             <h1 className="text-2xl font-bold">{data.candidate.name || 'Dashboard'}</h1>
             <p className="text-gray-400 text-sm">{profile.current_title}</p>
           </div>
-          <button onClick={() => navigate(`/jobs/${candidateId}`)}
+          <button onClick={() => navigate("/jobs")}
             className="bg-brand-500 hover:bg-brand-600 text-white font-medium px-5 py-2.5 rounded-xl transition-colors">
             Search Jobs
           </button>
@@ -65,7 +66,7 @@ export default function Dashboard() {
           <div className="bg-white rounded-xl border border-gray-100 p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-gray-700">Recent Matches</h3>
-              <button onClick={() => navigate(`/jobs/${candidateId}`)}
+              <button onClick={() => navigate("/jobs")}
                 className="text-sm text-brand-500 hover:text-brand-600">View all</button>
             </div>
             {data.recent_matches.length === 0 ? (
@@ -120,7 +121,7 @@ export default function Dashboard() {
         <div className="mt-6 bg-white rounded-xl border border-gray-100 p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-700">Profile Summary</h3>
-            <button onClick={() => navigate(`/profile/${candidateId}`)}
+            <button onClick={() => navigate("/profile")}
               className="text-sm text-brand-500 hover:text-brand-600">Edit profile</button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">

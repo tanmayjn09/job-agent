@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { resumesApi, jobsApi } from '../utils/api'
+import { getCandidateId } from '../utils/candidate'
 
 export default function ResumeBuilder() {
-  const { candidateId, jobId } = useParams()
+  const { jobId } = useParams()
+  const candidateId = getCandidateId()
   const navigate = useNavigate()
   const [job, setJob] = useState(null)
   const [resume, setResume] = useState(null)

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { candidatesApi } from '../utils/api'
+import { getCandidateId } from '../utils/candidate'
 
 export default function Profile() {
-  const { candidateId } = useParams()
+  const candidateId = getCandidateId()
   const navigate = useNavigate()
   const [candidate, setCandidate] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -56,7 +57,7 @@ export default function Profile() {
             <h1 className="text-2xl font-bold">{profile.name || 'Your Profile'}</h1>
             <p className="text-gray-400 text-sm mt-0.5">{profile.current_title} · {profile.years_experience} years experience</p>
           </div>
-          <button onClick={() => navigate(`/jobs/${candidateId}`)}
+          <button onClick={() => navigate("/jobs")}
             className="bg-brand-500 hover:bg-brand-600 text-white font-medium px-6 py-2.5 rounded-xl transition-colors">
             Find Jobs →
           </button>
@@ -169,11 +170,11 @@ export default function Profile() {
         </div>
 
         <div className="flex gap-3 mt-6">
-          <button onClick={() => navigate(`/dashboard/${candidateId}`)}
+          <button onClick={() => navigate("/dashboard")}
             className="flex-1 border border-gray-200 text-gray-600 font-medium py-3 rounded-xl hover:bg-gray-50 transition-colors">
             Dashboard
           </button>
-          <button onClick={() => navigate(`/jobs/${candidateId}`)}
+          <button onClick={() => navigate("/jobs")}
             className="flex-1 bg-brand-500 hover:bg-brand-600 text-white font-medium py-3 rounded-xl transition-colors">
             Find Jobs →
           </button>
