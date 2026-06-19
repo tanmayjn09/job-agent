@@ -142,6 +142,40 @@ async def search_jobs(filters: JobSearchFilters, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/saved")
+def get_saved_matches(candidate_id: int, db: Session = Depends(get_db)):
+    matches = (
+        db.query(JobMatch)
+        .filter(JobMatch.candidate_id == candidate_id)
+        .order_by(JobMatch.priority_score.desc().nulls_last(), JobMatch.created_at.desc())
+        .limit(60)
+        .all()
+    )
+    result = []
+    for m in matches:
+        job = m.job
+        if not job:
+            continue
+        result.append({
+            "id": m.id,
+            "match_score": m.match_score,
+            "match_reasoning": m.match_reasoning,
+            "skill_matches": m.skill_matches,
+            "skill_gaps": m.skill_gaps,
+            "is_applied": bool(m.is_applied),
+            "applied_at": m.applied_at.isoformat() if m.applied_at else None,
+            "created_at": m.created_at.isoformat() if m.created_at else None,
+            "job": {
+                "id": job.id, "title": job.title, "company": job.company,
+                "location": job.location, "description": job.description,
+                "url": job.url, "source": job.source, "posted_at": job.posted_at,
+                "remote": job.remote or False, "seniority": job.seniority,
+                "industry": job.industry, "employment_type": job.employment_type,
+            },
+        })
+    return {"matches": result, "total": len(result)}
+
+
 @router.get("/{job_id}")
 def get_job(job_id: int, candidate_id: int, db: Session = Depends(get_db)):
     job = db.query(Job).filter(Job.id == job_id).first()
@@ -185,37 +219,3 @@ def toggle_applied(match_id: int, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(match)
     return {"id": match.id, "is_applied": match.is_applied, "applied_at": match.applied_at}
-
-
-@router.get("/saved")
-def get_saved_matches(candidate_id: int, db: Session = Depends(get_db)):
-    matches = (
-        db.query(JobMatch)
-        .filter(JobMatch.candidate_id == candidate_id)
-        .order_by(JobMatch.priority_score.desc().nulls_last(), JobMatch.created_at.desc())
-        .limit(60)
-        .all()
-    )
-    result = []
-    for m in matches:
-        job = m.job
-        if not job:
-            continue
-        result.append({
-            "id": m.id,
-            "match_score": m.match_score,
-            "match_reasoning": m.match_reasoning,
-            "skill_matches": m.skill_matches,
-            "skill_gaps": m.skill_gaps,
-            "is_applied": bool(m.is_applied),
-            "applied_at": m.applied_at.isoformat() if m.applied_at else None,
-            "created_at": m.created_at.isoformat() if m.created_at else None,
-            "job": {
-                "id": job.id, "title": job.title, "company": job.company,
-                "location": job.location, "description": job.description,
-                "url": job.url, "source": job.source, "posted_at": job.posted_at,
-                "remote": job.remote or False, "seniority": job.seniority,
-                "industry": job.industry, "employment_type": job.employment_type,
-            },
-        })
-    return {"matches": result, "total": len(result)}

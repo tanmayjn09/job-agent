@@ -30,15 +30,18 @@ function parsePostedAt(str) {
   if (/just|now|today|active today/.test(s)) return Date.now()
   if (/yesterday/.test(s)) return Date.now() - 86400000
   const m = s.match(/(\d+)\+?\s*(minute|hour|day|week|month|year)/)
-  if (!m) return 0
-  const n = parseInt(m[1])
-  const u = m[2]
-  if (u.startsWith('minute')) return Date.now() - n * 60000
-  if (u.startsWith('hour')) return Date.now() - n * 3600000
-  if (u.startsWith('day')) return Date.now() - n * 86400000
-  if (u.startsWith('week')) return Date.now() - n * 604800000
-  if (u.startsWith('month')) return Date.now() - n * 2592000000
-  return Date.now() - n * 31536000000
+  if (m) {
+    const n = parseInt(m[1]), u = m[2]
+    if (u.startsWith('minute')) return Date.now() - n * 60000
+    if (u.startsWith('hour')) return Date.now() - n * 3600000
+    if (u.startsWith('day')) return Date.now() - n * 86400000
+    if (u.startsWith('week')) return Date.now() - n * 604800000
+    if (u.startsWith('month')) return Date.now() - n * 2592000000
+    return Date.now() - n * 31536000000
+  }
+  // ISO date string (e.g. "2026-06-14T10:30:00+00:00")
+  const d = new Date(str)
+  return isNaN(d) ? 0 : d.getTime()
 }
 
 export default function JobSearch() {
