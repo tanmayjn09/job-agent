@@ -30,6 +30,17 @@ domain_fit: "strong", "related", "adjacent", "unrelated"
 reasoning: 2-3 sentence explanation of the score"""
 
 
+def score_job(candidate_profile: dict, job_description: str, job_title: str = "") -> dict:
+    """Sync wrapper used by the background scheduler."""
+    import asyncio
+    loop = asyncio.new_event_loop()
+    try:
+        result = loop.run_until_complete(score_job_async(candidate_profile, {"description": job_description, "title": job_title}))
+        return result
+    finally:
+        loop.close()
+
+
 async def score_job_async(candidate_profile: dict, job: dict) -> dict:
     profile_str = json.dumps(candidate_profile, indent=2)
     job_description = job.get("description", "")
