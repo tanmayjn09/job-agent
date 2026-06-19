@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { candidatesApi, resumesApi } from '../utils/api'
-import { getCandidateId } from '../utils/candidate'
+import { getCandidateIdInt as getCandidateId } from "../utils/candidate"
 
 function StatCard({ label, value, sub }) {
   return (
@@ -14,7 +14,7 @@ function StatCard({ label, value, sub }) {
 }
 
 export default function Dashboard() {
-  const candidateId = getCandidateId()
+  const candidateId = getCandidateIdInt()
   const navigate = useNavigate()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import JobCard from '../components/JobCard'
 import { jobsApi, candidatesApi } from '../utils/api'
-import { getCandidateId } from '../utils/candidate'
+import { getCandidateIdInt } from '../utils/candidate'
 
 const DATE_OPTIONS = [
   { value: 'all', label: 'All time' },
@@ -37,7 +37,7 @@ function parsePostedAt(str) {
 }
 
 export default function JobSearch() {
-  const candidateId = getCandidateId()
+  const candidateId = getCandidateIdInt()
   const navigate = useNavigate()
   const cacheKey = `job_search_${candidateId}`
 

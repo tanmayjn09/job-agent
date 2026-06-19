@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { resumesApi, jobsApi } from '../utils/api'
-import { getCandidateId } from '../utils/candidate'
+import { getCandidateIdInt } from '../utils/candidate'
 
 export default function ResumeBuilder() {
   const { jobId } = useParams()
-  const candidateId = getCandidateId()
+  const candidateId = getCandidateIdInt()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!candidateId) navigate('/', { replace: true })
+  }, [])
   const [job, setJob] = useState(null)
   const [resume, setResume] = useState(null)
   const [resumeContent, setResumeContent] = useState(null)
@@ -27,7 +31,7 @@ export default function ResumeBuilder() {
     setGenerating(true)
     setError('')
     try {
-      const res = await resumesApi.tailor(parseInt(candidateId), parseInt(jobId), pastedDescription || null)
+      const res = await resumesApi.tailor(candidateId, parseInt(jobId), pastedDescription || null)
       setResume(res.data)
       try { setResumeContent(JSON.parse(res.data.content_json)) } catch {}
     } catch (err) {

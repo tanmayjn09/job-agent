@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { candidatesApi } from '../utils/api'
-import { getCandidateId } from '../utils/candidate'
+import { getCandidateIdInt as getCandidateId } from "../utils/candidate"
 
 export default function Profile() {
-  const candidateId = getCandidateId()
+  const candidateId = getCandidateIdInt()
   const navigate = useNavigate()
   const [candidate, setCandidate] = useState(null)
   const [profile, setProfile] = useState(null)
