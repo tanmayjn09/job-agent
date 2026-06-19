@@ -1,4 +1,4 @@
-import re
+import asyncio
 import httpx
 from bs4 import BeautifulSoup
 from .base import BaseCrawler, normalize_job
@@ -6,26 +6,6 @@ from .base import BaseCrawler, normalize_job
 
 class LinkedInCrawler(BaseCrawler):
     source_name = "linkedin"
-
-    async def _fetch_description(self, client: httpx.AsyncClient, job_url: str) -> str:
-        """Fetch job description from LinkedIn public job detail page."""
-        try:
-            # URL format: /jobs/view/job-title-slug-4308021555 (ID at end)
-            job_id_match = re.search(r"(\d{8,})(?:[/?]|$)", job_url)
-            if not job_id_match:
-                return ""
-            job_id = job_id_match.group(1)
-            res = await client.get(
-                f"https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{job_id}",
-                timeout=10,
-            )
-            soup = BeautifulSoup(res.text, "html.parser")
-            desc_el = soup.find("div", class_=lambda c: c and "description__text" in c)
-            if desc_el:
-                return desc_el.get_text(separator="\n", strip=True)[:3000]
-        except Exception:
-            pass
-        return ""
 
     async def search(self, query: str, location: str = "", **kwargs) -> list[dict]:
         headers = {
@@ -35,7 +15,7 @@ class LinkedInCrawler(BaseCrawler):
         }
         jobs = []
         async with httpx.AsyncClient(timeout=20, follow_redirects=True, headers=headers) as client:
-            for start in [0, 25]:
+            for start in [0, 25, 50]:
                 params = {
                     "keywords": query,
                     "location": location or "India",
@@ -72,13 +52,11 @@ class LinkedInCrawler(BaseCrawler):
                     posted_at = date_el.get("datetime", "") if date_el else ""
                     url = link_el["href"].split("?")[0] if link_el and link_el.get("href") else ""
 
-                    description = await self._fetch_description(client, url)
-
                     jobs.append(normalize_job(
                         title=title,
                         company=company,
                         location=loc,
-                        description=description,
+                        description="",  # fetched on-demand in resume tailor
                         url=url,
                         source=self.source_name,
                         posted_at=posted_at,
@@ -88,4 +66,6 @@ class LinkedInCrawler(BaseCrawler):
                 if len(cards) < 25:
                     break
 
-        return jobs[:40]
+                await asyncio.sleep(0.5)
+
+        return jobs[:60]
