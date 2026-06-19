@@ -29,7 +29,24 @@ app.include_router(alerts.router)
 @app.on_event("startup")
 def startup():
     init_db()
+    _migrate_db()
     start_scheduler()
+
+
+def _migrate_db():
+    from .database import engine
+    from sqlalchemy import inspect, text
+    try:
+        inspector = inspect(engine)
+        cols = [c["name"] for c in inspector.get_columns("job_matches")]
+        with engine.connect() as conn:
+            if "is_applied" not in cols:
+                conn.execute(text("ALTER TABLE job_matches ADD COLUMN is_applied BOOLEAN DEFAULT FALSE"))
+            if "applied_at" not in cols:
+                conn.execute(text("ALTER TABLE job_matches ADD COLUMN applied_at TIMESTAMP"))
+            conn.commit()
+    except Exception:
+        pass
 
 
 @app.on_event("shutdown")

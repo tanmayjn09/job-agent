@@ -1,5 +1,6 @@
 import json
 import asyncio
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -172,3 +173,49 @@ def get_job(job_id: int, candidate_id: int, db: Session = Depends(get_db)):
             "skill_gaps": json.loads(match.skill_gaps) if match and match.skill_gaps else [],
         } if match else None
     }
+
+
+@router.patch("/job-matches/{match_id}/apply")
+def toggle_applied(match_id: int, db: Session = Depends(get_db)):
+    match = db.query(JobMatch).filter(JobMatch.id == match_id).first()
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+    match.is_applied = not bool(match.is_applied)
+    match.applied_at = datetime.now(timezone.utc) if match.is_applied else None
+    db.commit()
+    db.refresh(match)
+    return {"id": match.id, "is_applied": match.is_applied, "applied_at": match.applied_at}
+
+
+@router.get("/saved")
+def get_saved_matches(candidate_id: int, db: Session = Depends(get_db)):
+    matches = (
+        db.query(JobMatch)
+        .filter(JobMatch.candidate_id == candidate_id)
+        .order_by(JobMatch.priority_score.desc().nulls_last(), JobMatch.created_at.desc())
+        .limit(60)
+        .all()
+    )
+    result = []
+    for m in matches:
+        job = m.job
+        if not job:
+            continue
+        result.append({
+            "id": m.id,
+            "match_score": m.match_score,
+            "match_reasoning": m.match_reasoning,
+            "skill_matches": m.skill_matches,
+            "skill_gaps": m.skill_gaps,
+            "is_applied": bool(m.is_applied),
+            "applied_at": m.applied_at.isoformat() if m.applied_at else None,
+            "created_at": m.created_at.isoformat() if m.created_at else None,
+            "job": {
+                "id": job.id, "title": job.title, "company": job.company,
+                "location": job.location, "description": job.description,
+                "url": job.url, "source": job.source, "posted_at": job.posted_at,
+                "remote": job.remote or False, "seniority": job.seniority,
+                "industry": job.industry, "employment_type": job.employment_type,
+            },
+        })
+    return {"matches": result, "total": len(result)}

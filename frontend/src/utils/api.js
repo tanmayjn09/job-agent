@@ -21,6 +21,8 @@ export const candidatesApi = {
 export const jobsApi = {
   search: (filters) => api.post('/jobs/search', filters),
   get: (jobId, candidateId) => api.get(`/jobs/${jobId}?candidate_id=${candidateId}`),
+  saved: (candidateId) => api.get(`/jobs/saved?candidate_id=${candidateId}`),
+  toggleApply: (matchId) => api.patch(`/jobs/job-matches/${matchId}/apply`),
 }
 
 export const resumesApi = {

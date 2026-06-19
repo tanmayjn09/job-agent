@@ -227,16 +227,16 @@ async def discover_jobs(
     locations = locations or [""]
     all_jobs = []
 
-    # JSearch / Google Jobs - primary source
-    for location in locations[:3]:
-        gjobs = search_jobs_jsearch(
-            query=query,
-            location=location,
-            remote=remote,
-            date_posted=date_posted,
-            num=num_per_source,
-        )
-        all_jobs.extend(gjobs)
+    # JSearch / Google Jobs - all locations in parallel
+    loop = asyncio.get_event_loop()
+    jsearch_tasks = [
+        loop.run_in_executor(None, search_jobs_jsearch, query, loc, remote, date_posted, num_per_source)
+        for loc in locations[:3]
+    ]
+    jsearch_results = await asyncio.gather(*jsearch_tasks, return_exceptions=True)
+    for r in jsearch_results:
+        if not isinstance(r, Exception):
+            all_jobs.extend(r)
 
     # Multi-source crawlers - RemoteOK, WeWorkRemotely, HN, Wellfound, YC, Greenhouse/Lever career pages
     crawler_jobs = await crawl_all_sources(

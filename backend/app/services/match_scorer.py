@@ -3,7 +3,7 @@ import asyncio
 import anthropic
 from ..config import settings
 
-client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+async_client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 
 SCORING_PROMPT = """You are an expert recruiter scoring candidate-job fit.
 
@@ -30,18 +30,18 @@ domain_fit: "strong", "related", "adjacent", "unrelated"
 reasoning: 2-3 sentence explanation of the score"""
 
 
-def score_job(candidate_profile: dict, job_description: str, job_title: str = "") -> dict:
+async def score_job_async(candidate_profile: dict, job: dict) -> dict:
     profile_str = json.dumps(candidate_profile, indent=2)
+    job_description = job.get("description", "")
+    job_title = job.get("title", "")
 
-    message = client.messages.create(
+    message = await async_client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=1024,
-        messages=[
-            {
-                "role": "user",
-                "content": f"{SCORING_PROMPT}\n\nCANDIDATE PROFILE:\n{profile_str}\n\nJOB TITLE: {job_title}\n\nJOB DESCRIPTION:\n{job_description[:3000]}"
-            }
-        ]
+        max_tokens=512,
+        messages=[{
+            "role": "user",
+            "content": f"{SCORING_PROMPT}\n\nCANDIDATE PROFILE:\n{profile_str}\n\nJOB TITLE: {job_title}\n\nJOB DESCRIPTION:\n{job_description[:2000]}"
+        }]
     )
 
     response_text = message.content[0].text.strip()
@@ -49,20 +49,13 @@ def score_job(candidate_profile: dict, job_description: str, job_title: str = ""
         lines = response_text.split("\n")
         response_text = "\n".join(lines[1:-1])
 
-    result = json.loads(response_text)
+    try:
+        result = json.loads(response_text)
+    except Exception:
+        start = response_text.find("{")
+        result = json.loads(response_text[start:]) if start != -1 else {}
+
     result["match_score"] = max(0, min(100, float(result.get("match_score", 0))))
-    return result
-
-
-async def score_job_async(candidate_profile: dict, job: dict) -> dict:
-    loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(
-        None,
-        score_job,
-        candidate_profile,
-        job.get("description", ""),
-        job.get("title", ""),
-    )
     return {**job, **result}
 
 

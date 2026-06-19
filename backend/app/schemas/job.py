@@ -42,6 +42,8 @@ class JobMatchResponse(BaseModel):
     match_reasoning: Optional[str]
     skill_matches: Optional[str]
     skill_gaps: Optional[str]
+    is_applied: Optional[bool] = False
+    applied_at: Optional[datetime] = None
     created_at: Optional[datetime]
 
     class Config:

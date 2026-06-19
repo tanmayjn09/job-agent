@@ -42,6 +42,8 @@ class JobMatch(Base):
     skill_gaps = Column(Text, nullable=True)
     intelligence_json = Column(Text, nullable=True)
     priority_score = Column(Float, nullable=True)
+    is_applied = Column(Boolean, default=False)
+    applied_at = Column(DateTime(timezone=True), nullable=True)
 
     candidate = relationship("Candidate", back_populates="job_matches")
     job = relationship("Job", back_populates="matches")
