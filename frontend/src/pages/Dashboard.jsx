@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { candidatesApi, resumesApi } from '../utils/api'
-import { getCandidateIdInt as getCandidateId } from "../utils/candidate"
+import { getCandidateIdInt } from '../utils/candidate'
 
 function StatCard({ label, value, sub }) {
   return (
@@ -20,6 +20,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!candidateId) { navigate('/', { replace: true }); return }
     candidatesApi.dashboard(candidateId).then(res => {
       setData(res.data)
       setLoading(false)

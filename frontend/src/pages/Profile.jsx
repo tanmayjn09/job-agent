@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { candidatesApi } from '../utils/api'
-import { getCandidateIdInt as getCandidateId } from "../utils/candidate"
+import { getCandidateIdInt } from '../utils/candidate'
 
 export default function Profile() {
   const candidateId = getCandidateIdInt()
@@ -13,11 +13,12 @@ export default function Profile() {
   const [editingSection, setEditingSection] = useState(null)
 
   useEffect(() => {
+    if (!candidateId) { navigate('/', { replace: true }); return }
     candidatesApi.get(candidateId).then(res => {
       setCandidate(res.data)
       try { setProfile(JSON.parse(res.data.profile_json)) } catch {}
       setLoading(false)
-    }).catch(() => setLoading(false))
+    }).catch(() => { navigate('/', { replace: true }) })
   }, [candidateId])
 
   const saveProfile = async () => {
