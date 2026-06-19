@@ -12,58 +12,67 @@ def _job_hash(title: str, company: str, location: str) -> str:
     return hashlib.md5(key.encode()).hexdigest()
 
 
-def search_jobs_serpapi(
+def search_jobs_jsearch(
     query: str,
     location: str = "",
     remote: Optional[bool] = None,
     date_posted: str = "month",
-    employment_type: Optional[str] = None,
     num: int = 20,
 ) -> list[dict]:
-    if not settings.serpapi_key:
+    key = settings.rapidapi_key or settings.serpapi_key
+    if not key or key in ("your_serpapi_key_here", "your_rapidapi_key_here"):
         return []
 
+    q = query
+    if location:
+        q = f"{query} in {location}"
+    if remote:
+        q = f"{query} remote"
+
+    date_map = {"24h": "today", "week": "week", "month": "month"}
+    num_pages = max(1, min(num // 10, 5))
+
     params = {
-        "engine": "google_jobs",
-        "q": query,
-        "api_key": settings.serpapi_key,
-        "num": num,
+        "query": q,
+        "page": "1",
+        "num_pages": str(num_pages),
+        "date_posted": date_map.get(date_posted, "month"),
+        "country": "in" if location and any(c in location.lower() for c in ["bengaluru", "bangalore", "mumbai", "delhi", "hyderabad", "pune", "india"]) else "us",
     }
 
-    if location:
-        params["location"] = location
-    if date_posted:
-        date_map = {"24h": "today", "week": "week", "month": "month"}
-        params["chips"] = f"date_posted:{date_map.get(date_posted, 'month')}"
-    if employment_type:
-        params["employment_type"] = employment_type.upper()
-    if remote:
-        params["q"] += " remote"
-
     try:
-        response = httpx.get("https://serpapi.com/search", params=params, timeout=30)
+        response = httpx.get(
+            "https://jsearch.p.rapidapi.com/search",
+            params=params,
+            headers={
+                "X-RapidAPI-Key": key,
+                "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
+            },
+            timeout=30,
+        )
         data = response.json()
-        jobs = data.get("jobs_results", [])
-        return [_normalize_serpapi_job(j) for j in jobs]
+        jobs = data.get("data", [])
+        return [_normalize_jsearch_job(j) for j in jobs]
     except Exception:
         return []
 
 
-def _normalize_serpapi_job(raw: dict) -> dict:
-    extensions = raw.get("detected_extensions", {})
+def _normalize_jsearch_job(raw: dict) -> dict:
+    loc_parts = [raw.get("job_city", ""), raw.get("job_state", ""), raw.get("job_country", "")]
+    location = ", ".join(p for p in loc_parts if p)
     return {
-        "title": raw.get("title", ""),
-        "company": raw.get("company_name", ""),
-        "location": raw.get("location", ""),
-        "description": raw.get("description", ""),
-        "url": raw.get("share_link", raw.get("job_link", "")),
+        "title": raw.get("job_title", ""),
+        "company": raw.get("employer_name", ""),
+        "location": location,
+        "description": raw.get("job_description", ""),
+        "url": raw.get("job_apply_link", raw.get("job_google_link", "")),
         "source": "google_jobs",
-        "posted_at": extensions.get("posted_at", ""),
-        "remote": "remote" in raw.get("location", "").lower() or extensions.get("work_from_home", False),
-        "employment_type": extensions.get("schedule_type", ""),
-        "salary_min": None,
-        "salary_max": None,
-        "_hash": _job_hash(raw.get("title", ""), raw.get("company_name", ""), raw.get("location", "")),
+        "posted_at": raw.get("job_posted_at_datetime_utc", raw.get("job_posted_at_timestamp", "")),
+        "remote": raw.get("job_is_remote", False),
+        "employment_type": raw.get("job_employment_type", ""),
+        "salary_min": raw.get("job_min_salary"),
+        "salary_max": raw.get("job_max_salary"),
+        "_hash": _job_hash(raw.get("job_title", ""), raw.get("employer_name", ""), location),
     }
 
 
@@ -218,17 +227,16 @@ async def discover_jobs(
     locations = locations or [""]
     all_jobs = []
 
-    # SerpAPI (Google Jobs) - primary source
+    # JSearch / Google Jobs - primary source
     for location in locations[:3]:
-        serpapi_jobs = search_jobs_serpapi(
+        gjobs = search_jobs_jsearch(
             query=query,
             location=location,
             remote=remote,
             date_posted=date_posted,
-            employment_type=employment_type,
             num=num_per_source,
         )
-        all_jobs.extend(serpapi_jobs)
+        all_jobs.extend(gjobs)
 
     # Multi-source crawlers - RemoteOK, WeWorkRemotely, HN, Wellfound, YC, Greenhouse/Lever career pages
     crawler_jobs = await crawl_all_sources(
@@ -238,8 +246,9 @@ async def discover_jobs(
     )
     all_jobs.extend(crawler_jobs)
 
-    # LinkedIn fallback if no SerpAPI key
-    if not settings.serpapi_key:
+    # LinkedIn fallback if no Google Jobs key
+    key = settings.rapidapi_key or settings.serpapi_key
+    if not key or key in ("your_serpapi_key_here", "your_rapidapi_key_here"):
         for location in locations[:2]:
             linkedin_jobs = scrape_linkedin_jobs(query=query, location=location, num=num_per_source)
             all_jobs.extend(linkedin_jobs)

@@ -6,6 +6,7 @@ from pathlib import Path
 class Settings(BaseSettings):
     anthropic_api_key: str
     serpapi_key: str = ""
+    rapidapi_key: str = ""
     database_url: str = "sqlite:///./job_agent.db"
 
     @field_validator("database_url", mode="before")
