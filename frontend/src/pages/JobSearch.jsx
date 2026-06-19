@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import JobCard from '../components/JobCard'
 import { jobsApi, candidatesApi } from '../utils/api'
-import { getCandidateIdInt } from '../utils/candidate'
+import { getCandidateIdInt, clearCandidateId } from '../utils/candidate'
 
 const DATE_OPTIONS = [
   { value: 'all', label: 'All time' },
@@ -91,6 +91,7 @@ export default function JobSearch() {
   }, [candidateId])
 
   const search = async () => {
+    if (!candidateId) { clearCandidateId(); navigate('/', { replace: true }); return }
     setLoading(true)
     setError('')
     setHasSearched(true)
@@ -101,7 +102,13 @@ export default function JobSearch() {
       setMatches(results)
       sessionStorage.setItem(cacheKey, JSON.stringify({ savedFilters: filters, savedMatches: results, savedSort: sortBy }))
     } catch (err) {
-      setError(err.response?.data?.detail || 'Search failed. Check your API keys and try again.')
+      const detail = err.response?.data?.detail || ''
+      if (err.response?.status === 404 && detail.toLowerCase().includes('candidate')) {
+        clearCandidateId()
+        navigate('/', { replace: true })
+        return
+      }
+      setError(detail || 'Search failed. Check your API keys and try again.')
     } finally {
       setLoading(false)
     }
