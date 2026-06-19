@@ -246,7 +246,7 @@ async def discover_jobs(
 
     unique = deduplicate_jobs(all_jobs)
     location_filtered = filter_by_locations(unique, locations)
-    return prefilter_jobs(location_filtered, query, locations=locations, limit=150)
+    return prefilter_jobs(location_filtered, query, locations=locations, limit=120)
 
 
 def apply_company_type_filter(jobs: list[dict], company_type: str) -> list[dict]:

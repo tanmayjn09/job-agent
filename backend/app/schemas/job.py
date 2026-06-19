@@ -14,7 +14,7 @@ class JobSearchFilters(BaseModel):
     industries: Optional[List[str]] = []
     employment_type: Optional[str] = None
     page: Optional[int] = 1
-    per_page: Optional[int] = 40
+    per_page: Optional[int] = 60
 
 
 class JobResponse(BaseModel):

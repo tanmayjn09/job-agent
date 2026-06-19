@@ -26,14 +26,19 @@ const CITY_SUGGESTIONS = [
 
 function parsePostedAt(str) {
   if (!str) return 0
-  const m = str.match(/(\d+)\s*(hour|day|week|month)/i)
+  const s = str.toLowerCase()
+  if (/just|now|today|active today/.test(s)) return Date.now()
+  if (/yesterday/.test(s)) return Date.now() - 86400000
+  const m = s.match(/(\d+)\+?\s*(minute|hour|day|week|month|year)/)
   if (!m) return 0
   const n = parseInt(m[1])
-  const u = m[2].toLowerCase()
+  const u = m[2]
+  if (u.startsWith('minute')) return Date.now() - n * 60000
   if (u.startsWith('hour')) return Date.now() - n * 3600000
   if (u.startsWith('day')) return Date.now() - n * 86400000
   if (u.startsWith('week')) return Date.now() - n * 604800000
-  return Date.now() - n * 2592000000
+  if (u.startsWith('month')) return Date.now() - n * 2592000000
+  return Date.now() - n * 31536000000
 }
 
 export default function JobSearch() {
@@ -54,12 +59,13 @@ export default function JobSearch() {
     company_type: '',
     seniority: '',
     page: 1,
-    per_page: 40,
+    per_page: 60,
   })
   const [locationInput, setLocationInput] = useState('')
   const [showCitySuggestions, setShowCitySuggestions] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const [sortBy, setSortBy] = useState('match')
+  const [sourceFiler, setSourceFilter] = useState('all')
 
   useEffect(() => {
     // Restore cached search results if coming back from resume builder
@@ -95,6 +101,7 @@ export default function JobSearch() {
     setLoading(true)
     setError('')
     setHasSearched(true)
+    setSourceFilter('all')
     sessionStorage.removeItem(cacheKey)
     try {
       const res = await jobsApi.search({ ...filters, candidate_id: parseInt(candidateId) })
@@ -276,8 +283,36 @@ export default function JobSearch() {
 
         {!loading && matches.length > 0 && (
           <div>
+            {/* Platform tabs */}
+            {(() => {
+              const sources = ['all', ...([...new Set(matches.map(m => m.job?.source).filter(Boolean))])]
+              const SOURCE_NAMES = {
+                google_jobs: 'Google', linkedin: 'LinkedIn', remoteok: 'RemoteOK',
+                remotive: 'Remotive', wellfound: 'Wellfound', hn_jobs: 'HN', yc: 'YC',
+                greenhouse: 'Greenhouse', lever: 'Lever', weworkremotely: 'WWR', naukri: 'Naukri',
+              }
+              const counts = sources.reduce((acc, s) => {
+                acc[s] = s === 'all' ? matches.length : matches.filter(m => m.job?.source === s).length
+                return acc
+              }, {})
+              return (
+                <div className="flex gap-2 mb-4 flex-wrap">
+                  {sources.map(s => (
+                    <button key={s} onClick={() => setSourceFilter(s)}
+                      className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${sourceFiler === s ? 'bg-brand-500 text-white border-brand-500' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                      {s === 'all' ? 'All' : (SOURCE_NAMES[s] || s)}
+                      <span className={`ml-1.5 text-xs ${sourceFiler === s ? 'opacity-75' : 'text-gray-400'}`}>{counts[s]}</span>
+                    </button>
+                  ))}
+                </div>
+              )
+            })()}
+
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm text-gray-500">{matches.length} jobs found</p>
+              {(() => {
+                const filtered = sourceFiler === 'all' ? matches : matches.filter(m => m.job?.source === sourceFiler)
+                return <p className="text-sm text-gray-500">{filtered.length} jobs{sourceFiler !== 'all' ? ` from ${sourceFiler}` : ''}</p>
+              })()}
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400">Sort by:</span>
                 <select value={sortBy} onChange={e => setSortBy(e.target.value)}
@@ -289,7 +324,7 @@ export default function JobSearch() {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[...matches].sort((a, b) => {
+              {[...(sourceFiler === 'all' ? matches : matches.filter(m => m.job?.source === sourceFiler))].sort((a, b) => {
                 if (sortBy === 'recent') return parsePostedAt(b.job?.posted_at) - parsePostedAt(a.job?.posted_at)
                 if (sortBy === 'company') return (a.job?.company || '').localeCompare(b.job?.company || '')
                 return b.match_score - a.match_score
