@@ -101,7 +101,7 @@ async def search_jobs(filters: JobSearchFilters, db: Session = Depends(get_db)):
     db.commit()
 
     page = filters.page or 1
-    per_page = filters.per_page or 20
+    per_page = filters.per_page or 40
     start = (page - 1) * per_page
     end = start + per_page
     page_matches = saved_matches[start:end]

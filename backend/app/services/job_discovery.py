@@ -33,7 +33,7 @@ def search_jobs_serpapi(
     if location:
         params["location"] = location
     if date_posted:
-        date_map = {"24h": "today", "week": "3days", "month": "month"}
+        date_map = {"24h": "today", "week": "week", "month": "month"}
         params["chips"] = f"date_posted:{date_map.get(date_posted, 'month')}"
     if employment_type:
         params["employment_type"] = employment_type.upper()
@@ -246,7 +246,7 @@ async def discover_jobs(
 
     unique = deduplicate_jobs(all_jobs)
     location_filtered = filter_by_locations(unique, locations)
-    return prefilter_jobs(location_filtered, query, locations=locations, limit=60)
+    return prefilter_jobs(location_filtered, query, locations=locations, limit=150)
 
 
 def apply_company_type_filter(jobs: list[dict], company_type: str) -> list[dict]:

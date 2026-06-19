@@ -54,7 +54,7 @@ export default function JobSearch() {
     company_type: '',
     seniority: '',
     page: 1,
-    per_page: 20,
+    per_page: 40,
   })
   const [locationInput, setLocationInput] = useState('')
   const [showCitySuggestions, setShowCitySuggestions] = useState(false)
